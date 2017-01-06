@@ -27,9 +27,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         preferences = getSharedPreferences("LIMIT", MODE_PRIVATE);
 
-        String limit = preferences.getString("limit", null);
+        int limit = preferences.getInt("limit", -1);
 
-        if(limit != null){
+        if(limit != -1){
             toActivity();
         }
 
@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 if (!txtLimit.isEmpty()) {
                     SharedPreferences.Editor editor = preferences.edit();
-                    editor.putString("limit", txtLimit);
+                    editor.putInt("limit", Integer.parseInt(txtLimit));
                     editor.apply();
 
                     toActivity();
