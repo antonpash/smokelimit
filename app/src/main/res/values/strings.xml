@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Smoke Limit</string>
+    <string name="main_activity_title">Cigarettes limit per day:</string>
+    <string name="button_ok">ok</string>
 </resources>
