@@ -1,4 +1,4 @@
-package app1.antonpash.com.smokelimit;
+package com.antonpash.smokelimit;
 
 import android.content.Intent;
 import android.content.SharedPreferences;

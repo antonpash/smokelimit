@@ -1,4 +1,4 @@
-package app1.antonpash.com.smokelimit;
+package com.antonpash.com.smokelimit;
 
 import org.junit.Test;
 

@@ -1,10 +1,10 @@
-package app1.antonpash.com.smokelimit.receivers;
+package com.antonpash.smokelimit.receivers;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import app1.antonpash.com.smokelimit.services.MyIntentService;
+import com.antonpash.smokelimit.services.MyIntentService;
 
 public class OnBootReceiver extends BroadcastReceiver {
     public OnBootReceiver() {

@@ -4,7 +4,7 @@
     android:id="@+id/activity_manage"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="app1.antonpash.com.smokelimit.ManageActivity">
+    tools:context="com.antonpash.com.smokelimit.com.antonpash.smokelimit.ManageActivity">
 
     <LinearLayout
         android:layout_width="wrap_content"

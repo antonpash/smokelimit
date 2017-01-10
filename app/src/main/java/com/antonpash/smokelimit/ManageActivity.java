@@ -1,4 +1,4 @@
-package app1.antonpash.com.smokelimit;
+package com.antonpash.smokelimit;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,10 +13,10 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.antonpash.smokelimit.services.MyIntentService;
+
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
-import app1.antonpash.com.smokelimit.services.MyIntentService;
 
 public class ManageActivity extends AppCompatActivity implements View.OnLongClickListener {
 
@@ -100,7 +100,7 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
 
         timestamp = preferences.getLong("timestamp", 0);
 
-        if(timestamp == 0){
+        if (timestamp == 0) {
             progressBar.setVisibility(View.GONE);
         }
     }

@@ -1,4 +1,4 @@
-package app1.antonpash.com.smokelimit.services;
+package com.antonpash.smokelimit.services;
 
 import android.app.AlarmManager;
 import android.app.NotificationManager;
@@ -17,8 +17,8 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 
-import app1.antonpash.com.smokelimit.ManageActivity;
-import app1.antonpash.com.smokelimit.R;
+import com.antonpash.smokelimit.ManageActivity;
+import com.antonpash.smokelimit.R;
 
 
 public class MyIntentService extends Service {
