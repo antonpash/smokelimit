@@ -41,6 +41,9 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
                     break;
                 case "TIME_LEFT_POST":
                     isStepRunning = false;
+
+                    editor.putLong("timestamp", 0);
+                    editor.apply();
                     break;
             }
         }
@@ -50,12 +53,13 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage);
+
+        init();
+
     }
 
     @Override
     protected void onResume() {
-
-        init();
 
         checkLastVisited();
 
@@ -119,7 +123,7 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     public boolean onLongClick(View v) {
 
         if (!isStepRunning) {
-            if (curLimit > -10) {
+            if (curLimit > -100) {
                 txtCurLimit.setText(String.valueOf(--curLimit));
                 editor.putInt("curLimit", curLimit);
 

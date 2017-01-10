@@ -8,7 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.media.RingtoneManager;
-import android.os.AsyncTask;
+import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
@@ -18,13 +18,14 @@ import android.util.Log;
 
 import app1.antonpash.com.smokelimit.ManageActivity;
 import app1.antonpash.com.smokelimit.R;
-import app1.antonpash.com.smokelimit.tasks.TimeLeftTask;
 
 
-public class MyIntentService extends Service implements TimeLeftTask.TimeLeftTaskListener {
+public class MyIntentService extends Service {
+
+    public static final int WORK = -1;
+    public static final int DONE = -2;
 
     long timestamp;
-    AsyncTask task;
     private Intent broadcastIntent;
 
     @Override
@@ -37,8 +38,22 @@ public class MyIntentService extends Service implements TimeLeftTask.TimeLeftTas
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d("anpa", "onStartCommand");
 
-        timestamp = intent.getLongExtra("timestamp", 10000);
-        task = new TimeLeftTask(timestamp, this).execute();
+        timestamp = intent.getLongExtra("timestamp", 0);
+
+        new CountDownTimer(timestamp - System.currentTimeMillis(), 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                Log.d("anpa", String.valueOf(millisUntilFinished));
+                broadcastIntent = new Intent("TIME_LEFT_PROGRESS");
+                broadcastIntent.putExtra("step", millisUntilFinished);
+                sendBroadcast(broadcastIntent);
+            }
+
+            @Override
+            public void onFinish() {
+                timeLeftPostCallback();
+            }
+        }.start();
 
         return START_STICKY;
     }
@@ -58,8 +73,6 @@ public class MyIntentService extends Service implements TimeLeftTask.TimeLeftTas
     public void onTaskRemoved(Intent rootIntent) {
         Log.d("anpa", "taskRemoved");
 
-        task.cancel(true);
-
         Intent restartService = new Intent(getApplicationContext(),
                 this.getClass());
         restartService.putExtra("timestamp", timestamp);
@@ -72,14 +85,6 @@ public class MyIntentService extends Service implements TimeLeftTask.TimeLeftTas
 
     }
 
-    @Override
-    public void timeLeftProgressCallback(long step) {
-        broadcastIntent = new Intent("TIME_LEFT_PROGRESS");
-        broadcastIntent.putExtra("step", step);
-        sendBroadcast(broadcastIntent);
-    }
-
-    @Override
     public void timeLeftPostCallback() {
         broadcastIntent = new Intent("TIME_LEFT_POST");
         sendBroadcast(broadcastIntent);
@@ -112,11 +117,4 @@ public class MyIntentService extends Service implements TimeLeftTask.TimeLeftTas
         stopSelf();
 
     }
-
-    @Override
-    public void timeLeftPreCallback() {
-        broadcastIntent = new Intent("TIME_LEFT_PRE");
-        sendBroadcast(broadcastIntent);
-    }
-
 }
