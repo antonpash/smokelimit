@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.os.CountDownTimer;
@@ -22,23 +23,24 @@ import app1.antonpash.com.smokelimit.R;
 
 public class MyIntentService extends Service {
 
-    public static final int WORK = -1;
-    public static final int DONE = -2;
-
     long timestamp;
+    SharedPreferences preferences;
+    SharedPreferences.Editor editor;
     private Intent broadcastIntent;
 
     @Override
     public void onCreate() {
         Log.d("anpa", "onCreate");
 
+        preferences = getSharedPreferences("LIMIT", MODE_PRIVATE);
+        editor = preferences.edit();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d("anpa", "onStartCommand");
 
-        timestamp = intent.getLongExtra("timestamp", 0);
+        timestamp = preferences.getLong("timestamp", 0);
 
         new CountDownTimer(timestamp - System.currentTimeMillis(), 1000) {
             @Override
@@ -86,6 +88,10 @@ public class MyIntentService extends Service {
     }
 
     public void timeLeftPostCallback() {
+
+        editor.putLong("timestamp", 0);
+        editor.apply();
+
         broadcastIntent = new Intent("TIME_LEFT_POST");
         sendBroadcast(broadcastIntent);
 

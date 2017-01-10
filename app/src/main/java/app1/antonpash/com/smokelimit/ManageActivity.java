@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -37,13 +38,14 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
             switch (intent.getAction()) {
                 case "TIME_LEFT_PROGRESS":
                     isStepRunning = true;
+
                     txtTimeLeft.setText(getTime(intent.getLongExtra("step", 0)));
+
+                    progressBar.setVisibility(View.GONE);
                     break;
                 case "TIME_LEFT_POST":
                     isStepRunning = false;
 
-                    editor.putLong("timestamp", 0);
-                    editor.apply();
                     break;
             }
         }
@@ -82,7 +84,6 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
         registerReceiver(receiver, filter);
 
         isStepRunning = false;
-        progressBar.setVisibility(View.GONE);
 
         preferences = getSharedPreferences("LIMIT", MODE_PRIVATE);
         editor = preferences.edit();
@@ -96,6 +97,12 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
         }
 
         txtCurLimit.setText(String.valueOf(curLimit));
+
+        timestamp = preferences.getLong("timestamp", 0);
+
+        if(timestamp == 0){
+            progressBar.setVisibility(View.GONE);
+        }
     }
 
     private void checkLastVisited() {
@@ -123,7 +130,7 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     public boolean onLongClick(View v) {
 
         if (!isStepRunning) {
-            if (curLimit > -100) {
+            if (curLimit > 0) {
                 txtCurLimit.setText(String.valueOf(--curLimit));
                 editor.putInt("curLimit", curLimit);
 
@@ -133,7 +140,6 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
                 editor.apply();
 
                 Intent intent = new Intent(this, MyIntentService.class);
-                intent.putExtra("timestamp", timestamp);
                 startService(intent);
             } else {
                 Toast.makeText(this, getString(R.string.manage_activity_limit_is_reached), Toast.LENGTH_SHORT).show();
@@ -153,4 +159,9 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
                         TimeUnit.MILLISECONDS.toMinutes(timestamp)));
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
 }
