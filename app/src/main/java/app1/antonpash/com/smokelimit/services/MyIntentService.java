@@ -98,7 +98,7 @@ public class MyIntentService extends Service {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(MyIntentService.this);
         builder.setSmallIcon(R.mipmap.ic_launcher);
         builder.setContentTitle(getString(R.string.app_name));
-        builder.setContentText("You were very patient and now you can smoke!");
+        builder.setContentText(getString(R.string.main_notification));
         builder.setAutoCancel(true);
         builder.setSound(RingtoneManager.getActualDefaultRingtoneUri(MyIntentService.this, RingtoneManager.TYPE_NOTIFICATION));
         builder.setVibrate(new long[]{500, 500, 500});
