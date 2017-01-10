@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">Smoke Limit</string>
+    <string name="app_name" translatable="false">Smoke Limit</string>
     <string name="main_activity_title">Cigarettes limit per day:</string>
-    <string name="button_ok">ok</string>
+    <string name="manage_activity_limit_is_reached">The limit is reached</string>
+    <string name="button_ok" translatable="false">ok</string>
 </resources>

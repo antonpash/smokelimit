@@ -1,21 +1,27 @@
 package app1.antonpash.com.smokelimit;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import app1.antonpash.com.smokelimit.services.MyIntentService;
+
 public class ManageActivity extends AppCompatActivity implements View.OnLongClickListener {
 
     public static final double HOURS = 16;
     private static final String FORMAT = "%02d:%02d:%02d";
+    private static final long TIME_FOR_SLEEP = 5;
 
     TextView txtCurLimit, txtTimeLeft;
     SharedPreferences preferences;
@@ -24,27 +30,55 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     long timestamp;
     boolean isStepRunning;
     int curLimit;
-    AsyncTask task;
+    FrameLayout progressBar;
+    BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (intent.getAction()) {
+                case "TIME_LEFT_PROGRESS":
+                    isStepRunning = true;
+                    txtTimeLeft.setText(getTime(intent.getLongExtra("step", 0)));
+                    break;
+                case "TIME_LEFT_POST":
+                    isStepRunning = false;
+                    break;
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage);
-
-        init();
     }
 
     @Override
     protected void onResume() {
 
+        init();
+
+        checkLastVisited();
 
         super.onResume();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);
     }
 
     private void init() {
         initUI();
 
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("TIME_LEFT_PROGRESS");
+        filter.addAction("TIME_LEFT_POST");
+        filter.addAction("TIME_LEFT_PRE");
+        registerReceiver(receiver, filter);
+
         isStepRunning = false;
+        progressBar.setVisibility(View.GONE);
 
         preferences = getSharedPreferences("LIMIT", MODE_PRIVATE);
         editor = preferences.edit();
@@ -58,21 +92,25 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
         }
 
         txtCurLimit.setText(String.valueOf(curLimit));
-
-        continueTimer();
     }
 
-    private void continueTimer() {
-        timestamp = preferences.getLong("timestamp", 0);
+    private void checkLastVisited() {
+        long lastVisited = preferences.getLong("lastVisited", 0);
 
-        if (timestamp != 0) {
-            task = new TimeLeftTask().execute();
+        if (lastVisited != 0) {
+            if (TimeUnit.MILLISECONDS.toHours(System.currentTimeMillis() - lastVisited) >= TIME_FOR_SLEEP) {
+                curLimit = limit;
+                txtCurLimit.setText(String.valueOf(curLimit));
+            }
         }
+        editor.putLong("lastVisited", System.currentTimeMillis());
+        editor.apply();
     }
 
     private void initUI() {
         txtCurLimit = (TextView) findViewById(R.id.txt_current_limit);
         txtTimeLeft = (TextView) findViewById(R.id.txt_time_left);
+        progressBar = (FrameLayout) findViewById(R.id.progress);
 
         txtCurLimit.setOnLongClickListener(this);
     }
@@ -81,15 +119,21 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     public boolean onLongClick(View v) {
 
         if (!isStepRunning) {
-            txtCurLimit.setText(String.valueOf(--curLimit));
-            editor.putInt("curLimit", curLimit);
+            if (curLimit > -10) {
+                txtCurLimit.setText(String.valueOf(--curLimit));
+                editor.putInt("curLimit", curLimit);
 
-            timestamp = System.currentTimeMillis() + (long) ((HOURS / limit) * 60 * 60 * 1000);
+                timestamp = System.currentTimeMillis() + (long) ((HOURS / limit) * 60 * 60 * 1000);
 
-            editor.putLong("timestamp", timestamp);
-            editor.apply();
+                editor.putLong("timestamp", timestamp);
+                editor.apply();
 
-            task = new TimeLeftTask().execute();
+                Intent intent = new Intent(this, MyIntentService.class);
+                intent.putExtra("timestamp", timestamp);
+                startService(intent);
+            } else {
+                Toast.makeText(this, getString(R.string.manage_activity_limit_is_reached), Toast.LENGTH_SHORT).show();
+            }
         }
 
         return false;
@@ -103,58 +147,6 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
                         TimeUnit.MILLISECONDS.toHours(timestamp)),
                 TimeUnit.MILLISECONDS.toSeconds(timestamp) - TimeUnit.MINUTES.toSeconds(
                         TimeUnit.MILLISECONDS.toMinutes(timestamp)));
-    }
-
-    class TimeLeftTask extends AsyncTask<Void, Long, Void> {
-
-        long step = timestamp - System.currentTimeMillis();
-        TextView txtTimeLeftLocal = txtTimeLeft;
-
-        public void setTxtTimeLeftLocal(TextView txtTimeLeftLocal) {
-            this.txtTimeLeftLocal = txtTimeLeftLocal;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            isStepRunning = true;
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-
-            while (step > 1000 && !isCancelled()) {
-                step -= 1000;
-                publishProgress(step);
-                Log.d("AnPa", "continue");
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Long... values) {
-            super.onProgressUpdate(values);
-
-            txtTimeLeftLocal.setText(getTime(values[0]));
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            isStepRunning = false;
-
-            editor.putLong("timestamp", 0);
-            editor.apply();
-
-        }
     }
 
 }
