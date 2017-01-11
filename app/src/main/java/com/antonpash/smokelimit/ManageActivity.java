@@ -14,6 +14,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.antonpash.smokelimit.services.MyIntentService;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
 
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +58,12 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage);
+
+        MobileAds.initialize(this, "ca-app-pub-8866352609118104~8627345677");
+
+        AdView adView = (AdView) findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
 
         init();
 
@@ -111,6 +120,7 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
         if (lastVisited != 0) {
             if (TimeUnit.MILLISECONDS.toHours(System.currentTimeMillis() - lastVisited) >= TIME_FOR_SLEEP) {
                 curLimit = limit;
+                editor.putInt("curLimit", curLimit);
                 txtCurLimit.setText(String.valueOf(curLimit));
             }
         }
