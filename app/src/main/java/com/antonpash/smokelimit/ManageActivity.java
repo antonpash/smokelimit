@@ -1,5 +1,6 @@
 package com.antonpash.smokelimit;
 
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,7 +14,8 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.antonpash.smokelimit.services.MyIntentService;
+import com.antonpash.smokelimit.services.ExtendedTimeService;
+import com.antonpash.smokelimit.services.TimeLeftService;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
@@ -23,11 +25,12 @@ import java.util.concurrent.TimeUnit;
 
 public class ManageActivity extends AppCompatActivity implements View.OnLongClickListener {
 
-    public static final double HOURS = 16;
+    public static final double HOURS = 0.025;
     private static final String FORMAT = "%02d:%02d:%02d";
+    private static final String EXT_FORMAT = "+%02d:%02d:%02d";
     private static final long TIME_FOR_SLEEP = 5;
 
-    TextView txtCurLimit, txtTimeLeft;
+    TextView txtCurLimit, txtTimeLeft, txtExTime;
     SharedPreferences preferences;
     int limit;
     SharedPreferences.Editor editor;
@@ -35,6 +38,7 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     boolean isStepRunning;
     int curLimit;
     FrameLayout progressBar;
+    Intent extTimeServiceIntent;
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -42,17 +46,36 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
                 case "TIME_LEFT_PROGRESS":
                     isStepRunning = true;
 
-                    txtTimeLeft.setText(getTime(intent.getLongExtra("step", 0)));
+                    txtTimeLeft.setText(getTime(intent.getLongExtra("step", 0), FORMAT));
 
-                    progressBar.setVisibility(View.GONE);
                     break;
                 case "TIME_LEFT_POST":
                     isStepRunning = false;
+
+                    startExtTimeService();
+                    break;
+            }
+
+            progressBar.setVisibility(View.GONE);
+        }
+    }, extTimeReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (intent.getAction()) {
+                case "EXT_TIME_PROGRESS":
+                    txtExTime.setVisibility(View.VISIBLE);
+                    txtExTime.setText(getTime(intent.getLongExtra("step", 0), EXT_FORMAT));
 
                     break;
             }
         }
     };
+
+    private void startExtTimeService() {
+
+        extTimeServiceIntent = new Intent(ManageActivity.this, ExtendedTimeService.class);
+        startService(extTimeServiceIntent);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +115,10 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
         filter.addAction("TIME_LEFT_PRE");
         registerReceiver(receiver, filter);
 
+        filter = new IntentFilter();
+        filter.addAction("EXT_TIME_PROGRESS");
+        registerReceiver(extTimeReceiver, filter);
+
         isStepRunning = false;
 
         preferences = getSharedPreferences("LIMIT", MODE_PRIVATE);
@@ -109,7 +136,14 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
 
         timestamp = preferences.getLong("timestamp", 0);
 
-        if (timestamp == 0) {
+        if (!isServiceRunning(TimeLeftService.class)) {
+            if (timestamp > System.currentTimeMillis()) {
+                Intent intent = new Intent(this, TimeLeftService.class);
+                startService(intent);
+            } else if (timestamp != 0) {
+                startExtTimeService();
+            }
+
             progressBar.setVisibility(View.GONE);
         }
     }
@@ -131,6 +165,7 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     private void initUI() {
         txtCurLimit = (TextView) findViewById(R.id.txt_current_limit);
         txtTimeLeft = (TextView) findViewById(R.id.txt_time_left);
+        txtExTime = (TextView) findViewById(R.id.txt_extended_time);
         progressBar = (FrameLayout) findViewById(R.id.progress);
 
         txtCurLimit.setOnLongClickListener(this);
@@ -140,7 +175,12 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     public boolean onLongClick(View v) {
 
         if (!isStepRunning) {
-            if (curLimit > 0) {
+            if (curLimit > -100) {
+                if(extTimeServiceIntent != null){
+                    stopService(extTimeServiceIntent);
+                    txtExTime.setVisibility(View.GONE);
+                }
+
                 txtCurLimit.setText(String.valueOf(--curLimit));
                 editor.putInt("curLimit", curLimit);
 
@@ -149,7 +189,7 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
                 editor.putLong("timestamp", timestamp);
                 editor.apply();
 
-                Intent intent = new Intent(this, MyIntentService.class);
+                Intent intent = new Intent(this, TimeLeftService.class);
                 startService(intent);
             } else {
                 Toast.makeText(this, getString(R.string.manage_activity_limit_is_reached), Toast.LENGTH_SHORT).show();
@@ -159,9 +199,9 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
         return false;
     }
 
-    private String getTime(long timestamp) {
+    private String getTime(long timestamp, String format) {
 
-        return String.format(Locale.getDefault(), FORMAT,
+        return String.format(Locale.getDefault(), format,
                 TimeUnit.MILLISECONDS.toHours(timestamp),
                 TimeUnit.MILLISECONDS.toMinutes(timestamp) - TimeUnit.HOURS.toMinutes(
                         TimeUnit.MILLISECONDS.toHours(timestamp)),
@@ -173,5 +213,15 @@ public class ManageActivity extends AppCompatActivity implements View.OnLongClic
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo serviceInfo : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(serviceInfo.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

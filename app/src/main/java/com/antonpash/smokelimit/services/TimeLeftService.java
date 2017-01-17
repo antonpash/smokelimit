@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.media.RingtoneManager;
+import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.os.SystemClock;
@@ -21,11 +22,12 @@ import com.antonpash.smokelimit.ManageActivity;
 import com.antonpash.smokelimit.R;
 
 
-public class MyIntentService extends Service {
+public class TimeLeftService extends Service {
 
     long timestamp;
     SharedPreferences preferences;
     SharedPreferences.Editor editor;
+    CountDownTimer timer;
     private Intent broadcastIntent;
 
     @Override
@@ -42,7 +44,7 @@ public class MyIntentService extends Service {
 
         timestamp = preferences.getLong("timestamp", 0);
 
-        new CountDownTimer(timestamp - System.currentTimeMillis(), 1000) {
+        timer = new CountDownTimer(timestamp - System.currentTimeMillis(), 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 Log.d("anpa", String.valueOf(millisUntilFinished));
@@ -63,6 +65,13 @@ public class MyIntentService extends Service {
     @Override
     public void onDestroy() {
         Log.d("anpa", "onDestroy");
+
+        if (preferences.getLong("timestamp", 0) > System.currentTimeMillis()) {
+            stopSelf();
+            timer.cancel();
+            restart();
+        }
+
     }
 
     @Nullable
@@ -75,6 +84,12 @@ public class MyIntentService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         Log.d("anpa", "taskRemoved");
 
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT) {
+            restart();
+        }
+    }
+
+    private void restart() {
         Intent restartService = new Intent(getApplicationContext(),
                 this.getClass());
         restartService.putExtra("timestamp", timestamp);
@@ -89,26 +104,23 @@ public class MyIntentService extends Service {
 
     public void timeLeftPostCallback() {
 
-        editor.putLong("timestamp", 0);
-        editor.apply();
-
         broadcastIntent = new Intent("TIME_LEFT_POST");
         sendBroadcast(broadcastIntent);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(MyIntentService.this);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(TimeLeftService.this);
         builder.setSmallIcon(R.mipmap.ic_launcher);
         builder.setContentTitle(getString(R.string.app_name));
         builder.setContentText(getString(R.string.main_notification));
         builder.setAutoCancel(true);
-        builder.setSound(RingtoneManager.getActualDefaultRingtoneUri(MyIntentService.this, RingtoneManager.TYPE_NOTIFICATION));
+        builder.setSound(RingtoneManager.getActualDefaultRingtoneUri(TimeLeftService.this, RingtoneManager.TYPE_NOTIFICATION));
         builder.setVibrate(new long[]{500, 500, 500});
         builder.setLights(Color.RED, 3000, 3000);
         builder.setCategory(NotificationCompat.CATEGORY_ALARM);
         builder.setPriority(NotificationCompat.PRIORITY_HIGH);
 
-        Intent intent = new Intent(MyIntentService.this, ManageActivity.class);
+        Intent intent = new Intent(TimeLeftService.this, ManageActivity.class);
 
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(MyIntentService.this);
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(TimeLeftService.this);
         stackBuilder.addParentStack(ManageActivity.class);
         stackBuilder.addNextIntent(intent);
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_ONE_SHOT);
@@ -119,6 +131,7 @@ public class MyIntentService extends Service {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         mNotificationManager.notify(0, builder.build());
+
 
         stopSelf();
 

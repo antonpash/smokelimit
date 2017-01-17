@@ -2,7 +2,7 @@
 <resources>
     <string name="main_activity_title">Дневной лимит сигарет:</string>
     <string name="main_menu_settings">Настройки</string>
-    <string name="main_notification">Наконец то можно курить!</string>
+    <string name="main_notification">Можно по курить, но лучше не стоит!</string>
     <string name="manage_activity_limit_is_reached">Исчерпан дневной лимит</string>
     <string name="app_name">Лимит Курения</string>
 </resources>

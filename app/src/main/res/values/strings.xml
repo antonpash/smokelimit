@@ -4,7 +4,7 @@
     <string name="app_name">Smoke Limit</string>
     <string name="main_activity_title">Cigarettes limit per day:</string>
     <string name="manage_activity_limit_is_reached">Limit is reached</string>
-    <string name="main_notification">You were very patient and now you can smoke!</string>
+    <string name="main_notification">You can smoke! Better don\'t do it!</string>
     <string name="button_ok" translatable="false">ok</string>
 
     <string name="main_menu_settings">Settings</string>
